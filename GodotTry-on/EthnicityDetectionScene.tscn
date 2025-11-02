@@ -1,0 +1,104 @@
+[gd_scene load_steps=2 format=3 uid="uid://k1t38hd8do6s"]
+
+[ext_resource type="Script" uid="uid://vm7cfc2f1gjx" path="res://EthnicityDetectionController.gd" id="1_controller"]
+
+[node name="VirtualTryOn" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_controller")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0784314, 0.156863, 0.235294, 1)
+
+[node name="MainContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="MainContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "👕 Virtual Try-On Application"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CameraPanel" type="PanelContainer" parent="MainContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CameraVBox" type="VBoxContainer" parent="MainContainer/CameraPanel"]
+layout_mode = 2
+
+[node name="WebcamFeed" type="TextureRect" parent="MainContainer/CameraPanel/CameraVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CameraStatusLabel" type="Label" parent="MainContainer/CameraPanel/CameraVBox/WebcamFeed"]
+modulate = Color(1, 1, 1, 0.9)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 20
+text = "🔗 Initializing..."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StatusContainer" type="HBoxContainer" parent="MainContainer/CameraPanel/CameraVBox"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+alignment = 1
+
+[node name="StatusLabel" type="Label" parent="MainContainer/CameraPanel/CameraVBox/StatusContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🎥 Ready for Try-On"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InfoLabel" type="Label" parent="MainContainer/CameraPanel/CameraVBox/StatusContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Select clothing to try"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ControlsContainer" type="VBoxContainer" parent="MainContainer"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+alignment = 1
+
+[node name="InstructionLabel" type="Label" parent="MainContainer/ControlsContainer"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Select a clothing item to apply try-on:"
+horizontal_alignment = 1
+
+[node name="ButtonContainer" type="HBoxContainer" parent="MainContainer/ControlsContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+alignment = 1
