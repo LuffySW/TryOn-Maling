@@ -1,0 +1,16 @@
+{
+  "cmd": "train",
+  "pos_dir": ".\\svm_orb_mask\\data\\faces",
+  "neg_dir": ".\\svm_orb_mask\\data\\non_faces",
+  "models_dir": ".\\svm_orb_mask\\models",
+  "k": 256,
+  "max_desc": 200000,
+  "svm": "linear",
+  "C": 1.0,
+  "seed": 42,
+  "resize_w": 128,
+  "resize_h": 128,
+  "nfeatures": 500,
+  "n_jobs": -1,
+  "proposer": "face"
+}

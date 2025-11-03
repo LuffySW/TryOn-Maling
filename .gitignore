@@ -1,0 +1,38 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Editor/IDE
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# macOS
+.Spotlight-V100
+.Trashes
+
+# Logs
+*.log
+
+# Ignore local build artifacts
+/build/
+/dist/
+
+# Git LFS pointer file tracking (if you use LFS, adjust accordingly)
+.gitattributes

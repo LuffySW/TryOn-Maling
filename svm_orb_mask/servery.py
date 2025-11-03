@@ -13,8 +13,11 @@ HOST = "127.0.0.1"
 PORT = 9999
 
 # Model & Aset
-MODEL_DIR = "models"
-ASSET_DIR = "assets"
+BASE_DIR = os.path.dirname(__file__) or os.getcwd()
+# Ensure asset/model paths are resolved relative to the script location so
+# the script can be launched from the project root or other working dirs.
+MODEL_DIR = os.path.join(BASE_DIR, "models")
+ASSET_DIR = os.path.join(BASE_DIR, "assets")
 HAAR_CASCADE_PATH = os.path.join(ASSET_DIR, "haarcascade_frontalface_default.xml")
 CODEBOOK_PATH = os.path.join(MODEL_DIR, "codebook.pkl")
 SCALER_PATH = os.path.join(MODEL_DIR, "scaler.pkl")

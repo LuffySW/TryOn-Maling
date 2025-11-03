@@ -209,3 +209,7 @@ func cleanup_resources():
 func _notification(what):
 	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
 		cleanup_resources()
+
+
+func _on_back_pressed() -> void:
+	get_tree().change_scene_to_file("res://MainMenu.tscn")

@@ -1,0 +1,100 @@
+[gd_scene load_steps=6 format=3 uid="uid://dtpfjhqpeuof8"]
+
+[ext_resource type="Script" path="res://main_menu.gd" id="1_1oemn"]
+[ext_resource type="Texture2D" uid="uid://cmyi4gd4kvo5d" path="res://halloween-party.jpg" id="1_jfcbi"]
+[ext_resource type="FontFile" uid="uid://d0vlndlol111c" path="res://GrapeSoda.ttf" id="2_co47x"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_kaxd2"]
+texture = ExtResource("1_jfcbi")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6o7eq"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.223529)
+shadow_size = 5
+shadow_offset = Vector2(0, 3.185)
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_1oemn")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_kaxd2")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -201.0
+offset_top = -74.0
+offset_right = 214.0
+offset_bottom = 211.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 11
+
+[node name="Button" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 39
+theme_override_styles/normal = SubResource("StyleBoxFlat_6o7eq")
+text = "START"
+
+[node name="Button2" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 39
+theme_override_styles/normal = SubResource("StyleBoxFlat_6o7eq")
+text = "CREDIT"
+
+[node name="Button3" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 39
+theme_override_styles/normal = SubResource("StyleBoxFlat_6o7eq")
+text = "EXIT"
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -504.0
+offset_top = -258.0
+offset_right = 504.0
+offset_bottom = -135.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_y = 25
+theme_override_fonts/font = ExtResource("2_co47x")
+theme_override_font_sizes/font_size = 73
+text = "EVALUASI TENGAH SEMESTER PCD"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[connection signal="pressed" from="VBoxContainer/Button" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="VBoxContainer/Button2" to="." method="_on_credit_pressed"]
+[connection signal="pressed" from="VBoxContainer/Button3" to="." method="_on_Exit_3_pressed"]

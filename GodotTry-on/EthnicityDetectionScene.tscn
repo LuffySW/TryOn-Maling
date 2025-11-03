@@ -1,6 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://k1t38hd8do6s"]
+[gd_scene load_steps=3 format=3 uid="uid://k1t38hd8do6s"]
 
-[ext_resource type="Script" uid="uid://vm7cfc2f1gjx" path="res://EthnicityDetectionController.gd" id="1_controller"]
+[ext_resource type="Script" path="res://EthnicityDetectionController.gd" id="1_controller"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rovkb"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.223529)
+shadow_size = 5
+shadow_offset = Vector2(0, 3.185)
 
 [node name="VirtualTryOn" type="Control"]
 layout_mode = 3
@@ -102,3 +112,24 @@ custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 size_flags_horizontal = 4
 alignment = 1
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -548.0
+offset_top = -300.0
+offset_right = -465.0
+offset_bottom = -273.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_rovkb")
+text = "BACK"
+
+[connection signal="pressed" from="Button" to="." method="_on_back_pressed"]
