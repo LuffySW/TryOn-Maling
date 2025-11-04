@@ -92,3 +92,23 @@ Q: Ada kotak hijau di wajah?
 ---
 
 **Last Updated**: November 4, 2025 | **Status**: ✅ Up-to-date dengan Godot + server
+ 
+## 📊 Evaluasi Model (Offline)
+
+Gunakan perintah ini untuk menilai performa model BoVW+SVM pada dataset Anda.
+
+1) Training (menyimpan artefak dan config):
+```powershell
+python app.py train --models_dir models
+```
+
+2) Evaluasi (membaca models/config.json untuk path data dan parameter):
+```powershell
+python app.py eval --models_dir models `
+  --report models\test_metrics.json `
+  --pr models\pr_curve.png
+```
+
+Output:
+- `test_metrics.json` berisi accuracy, classification report, confusion matrix, dan Average Precision (jika tersedia)
+- `pr_curve.png` grafik Precision–Recall (jika model menyediakan skor kontinu)

@@ -16,7 +16,8 @@ from sklearn.cluster import MiniBatchKMeans
 from sklearn.svm import LinearSVC, SVC
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, precision_recall_curve, average_precision_score
+import matplotlib.pyplot as plt
 
 # --- FUNGSI HELPER (YANG DIPANGGIL OLEH FUNGSI UTAMA) ---
 
@@ -160,18 +161,117 @@ def train_pipeline(args, logger):
 def eval_pipeline(args, logger):
     """Fungsi untuk evaluasi model (dipanggil oleh app.py eval)."""
     logger.info("--- Memulai Pipeline Evaluasi ---")
-    
-    # Implementasi evaluasi (jika diperlukan)
-    # Saat ini, training sudah melakukan evaluasi dasar.
-    # Anda bisa menambahkan logika di sini untuk memuat model dan 
-    # menjalankannya pada data tes secara spesifik.
-    logger.warning("Fungsi 'eval' belum diimplementasi penuh.")
-    logger.info("Silakan merujuk pada hasil evaluasi di akhir proses 'train'.")
-    
-    # Contoh jika Anda ingin menjalankannya:
-    # 1. Load model (kmeans, scaler, svm)
-    # 2. Load data tes (atau data dari config)
-    # 3. Buat histogram BoVW
-    # 4. Scale histogram
-    # 5. Jalankan svm.predict
-    # 6. Buat laporan
+
+    models_dir = getattr(args, "models_dir", "models")
+    report_path = getattr(args, "report", os.path.join(models_dir, "test_metrics.json"))
+    pr_path = getattr(args, "pr", os.path.join(models_dir, "pr_curve.png"))
+
+    # 1) Muat config untuk mengetahui sumber data dan parameter resize/nfeatures
+    cfg_path = os.path.join(models_dir, "config.json")
+    cfg = {}
+    if os.path.isfile(cfg_path):
+        try:
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+            logger.info(f"Config dimuat dari {cfg_path}")
+        except Exception as e:
+            logger.warning(f"Gagal membaca config.json: {e}")
+    else:
+        logger.warning(f"Config {cfg_path} tidak ditemukan. Menggunakan nilai default.")
+
+    pos_dir = cfg.get("pos_dir", "data/faces")
+    neg_dir = cfg.get("neg_dir", "data/non_faces")
+    resize_w = int(cfg.get("resize_w", 128))
+    resize_h = int(cfg.get("resize_h", 128))
+    nfeatures = int(cfg.get("nfeatures", 500))
+
+    # 2) Muat model (codebook, scaler, svm)
+    codebook_path = os.path.join(models_dir, "codebook.pkl")
+    scaler_path = os.path.join(models_dir, "scaler.pkl")
+    svm_path = os.path.join(models_dir, "svm.pkl")
+
+    if not (os.path.isfile(codebook_path) and os.path.isfile(scaler_path) and os.path.isfile(svm_path)):
+        logger.error("Model tidak lengkap. Pastikan codebook.pkl, scaler.pkl, dan svm.pkl ada di models_dir.")
+        return
+
+    kmeans = joblib.load(codebook_path)
+    scaler = joblib.load(scaler_path)
+    svm = joblib.load(svm_path)
+    logger.info("Model berhasil dimuat.")
+
+    # 3) Muat data uji (gunakan seluruh dataset sebagai evaluasi jika tidak ada split terpisah)
+    images, labels = load_dataset(pos_dir, neg_dir, logger)
+    if images is None or labels is None or len(images) == 0:
+        logger.error("Dataset kosong atau tidak dapat dimuat.")
+        return
+
+    # 4) Siapkan ORB dan buat histogram BoVW
+    orb = cv2.ORB_create(nfeatures=nfeatures)
+    resize_dim = (resize_w, resize_h)
+    X = create_bovw_histograms(images, orb, kmeans, resize_dim, logger)
+    y_true = labels
+
+    # 5) Scale fitur dan prediksi
+    X_scaled = scaler.transform(X)
+    y_pred = svm.predict(X_scaled)
+
+    # 6) Skor kontinu untuk PR curve
+    scores = None
+    if hasattr(svm, "decision_function"):
+        try:
+            scores = svm.decision_function(X_scaled)
+        except Exception:
+            scores = None
+    if scores is None and hasattr(svm, "predict_proba"):
+        try:
+            scores = svm.predict_proba(X_scaled)[:, 1]
+        except Exception:
+            scores = None
+
+    # 7) Metrik
+    cls_report = classification_report(y_true, y_pred, target_names=["non-face (0)", "face (1)"], output_dict=True)
+    acc = accuracy_score(y_true, y_pred)
+    cm = confusion_matrix(y_true, y_pred).tolist()
+
+    # 8) Simpan report JSON
+    out = {
+        "accuracy": acc,
+        "report": cls_report,
+        "confusion_matrix": cm,
+        "n_samples": int(len(y_true)),
+        "models_dir": models_dir,
+        "pos_dir": pos_dir,
+        "neg_dir": neg_dir,
+    }
+
+    # 9) PR curve jika skor tersedia
+    if scores is not None:
+        try:
+            precision, recall, _ = precision_recall_curve(y_true, scores)
+            ap = average_precision_score(y_true, scores)
+            out["average_precision"] = float(ap)
+
+            plt.figure(figsize=(5, 4))
+            plt.step(recall, precision, where="post", label=f"AP={ap:.3f}")
+            plt.xlabel("Recall")
+            plt.ylabel("Precision")
+            plt.title("Precision-Recall Curve")
+            plt.grid(True, alpha=0.3)
+            plt.legend()
+            os.makedirs(os.path.dirname(pr_path), exist_ok=True)
+            plt.tight_layout()
+            plt.savefig(pr_path)
+            plt.close()
+            logger.info(f"PR curve disimpan ke {pr_path}")
+        except Exception as e:
+            logger.warning(f"Gagal membuat PR curve: {e}")
+    else:
+        logger.warning("Model tidak menyediakan skor kontinu; PR curve dilewati.")
+
+    try:
+        os.makedirs(os.path.dirname(report_path), exist_ok=True)
+        with open(report_path, "w", encoding="utf-8") as f:
+            json.dump(out, f, indent=2)
+        logger.info(f"Laporan evaluasi disimpan ke {report_path}")
+    except Exception as e:
+        logger.error(f"Gagal menyimpan laporan evaluasi: {e}")

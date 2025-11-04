@@ -1,8 +1,8 @@
 {
   "cmd": "train",
-  "pos_dir": ".\\svm_orb_mask\\data\\faces",
-  "neg_dir": ".\\svm_orb_mask\\data\\non_faces",
-  "models_dir": ".\\svm_orb_mask\\models",
+  "pos_dir": "data/faces",
+  "neg_dir": "data/non_faces",
+  "models_dir": "models",
   "k": 256,
   "max_desc": 200000,
   "svm": "linear",

@@ -89,6 +89,31 @@ svm_orb_mask/
 - Nama file bebas; server melakukan normalisasi alias (contoh: `ski-mask-removebg-preview.png` → `ski-mask`)
 - Tools bantu: `svm_orb_mask/tools/convert_mask_to_png_rgba.py`, `svm_orb_mask/tools/test_mask_validation.py`
 
+## Evaluasi Model (Offline)
+
+Gunakan perintah ini untuk menilai performa model BoVW+SVM pada dataset Anda.
+
+1) Training (menyimpan artefak dan config):
+```powershell
+cd svm_orb_mask
+python app.py train --models_dir models
+```
+
+2) Evaluasi (membaca models/config.json untuk path data dan parameter):
+```powershell
+python app.py eval --models_dir models `
+  --report models\test_metrics.json `
+  --pr models\pr_curve.png
+```
+
+Output:
+- `test_metrics.json` berisi accuracy, classification report, confusion matrix, dan Average Precision (jika tersedia)
+- `pr_curve.png` grafik Precision–Recall (jika model menyediakan skor kontinu)
+
+Quick links:
+- [models/test_metrics.json](svm_orb_mask/models/test_metrics.json)
+- [models/pr_curve.png](svm_orb_mask/models/pr_curve.png)
+
 ## Dataset yang digunakan
 - [Intel Image Classification (Kaggle)](https://www.kaggle.com/datasets/puneet6060/intel-image-classification) — dataset negatif (non-wajah)
 - [LFW – People (Kaggle)](https://www.kaggle.com/datasets/atulanandjha/lfwpeople) — dataset positif (wajah)

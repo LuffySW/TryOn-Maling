@@ -1,0 +1,45 @@
+{
+  "accuracy": 0.8780189645488485,
+  "report": {
+    "non-face (0)": {
+      "precision": 0.8841856715042616,
+      "recall": 0.901315017024774,
+      "f1-score": 0.8926681783824642,
+      "support": 17034.0
+    },
+    "face (1)": {
+      "precision": 0.8697202201038519,
+      "recall": 0.8480314365601148,
+      "f1-score": 0.8587389041934497,
+      "support": 13233.0
+    },
+    "accuracy": 0.8780189645488485,
+    "macro avg": {
+      "precision": 0.8769529458040568,
+      "recall": 0.8746732267924444,
+      "f1-score": 0.8757035412879569,
+      "support": 30267.0
+    },
+    "weighted avg": {
+      "precision": 0.8778612482584288,
+      "recall": 0.8780189645488485,
+      "f1-score": 0.877833999727717,
+      "support": 30267.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      15353,
+      1681
+    ],
+    [
+      2011,
+      11222
+    ]
+  ],
+  "n_samples": 30267,
+  "models_dir": "models",
+  "pos_dir": "data/faces",
+  "neg_dir": "data/non_faces",
+  "average_precision": 0.9296420835286515
+}
