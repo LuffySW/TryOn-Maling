@@ -1,179 +1,94 @@
-# 🎭 Try-On Mask Overlay - Quick Reference
+# 🎭 Try-On Mask Overlay — Quick Start (Godot + Python Server)
 
-## ⚡ TL;DR - Solusi Cepat
+## ⚡ TL;DR (2 menit)
 
-Jika melihat error:
-```
-Error: File masker 'assets/haggus-skimask600x600.png' BUKAN PNG 4-channel (BGRA).
-```
-
-**Solusi:**
-
-### Opsi A: Gunakan Script Helper (Tercepat ✨)
-```bash
-# Konversi masker JPG ke PNG dengan transparansi
-python tools/convert_mask_to_png_rgba.py \
-    --input mask_original.jpg \
-    --output assets/mask_fixed.png \
-    --verify
-
-# Kemudian gunakan
-python app.py webcam --mask assets/mask_fixed.png --show
+1) Jalankan server Python (PowerShell):
+```powershell
+cd svm_orb_mask
+py .\server.py
 ```
 
-### Opsi B: Gunakan Online Tool (Tanpa Install)
-1. Buka https://www.remove.bg
-2. Upload masker Anda
-3. Download hasil PNG
-4. Simpan ke `assets/` folder
-5. Jalankan:
-```bash
-python app.py webcam --mask assets/mask_dari_remove_bg.png --show
-```
+2) Jalankan Godot, open project `GodotTry-on/project.godot`, run scene `MaskTryon.tscn`
 
-### Opsi C: Gunakan GIMP (Manual)
-1. Buka GIMP
-2. File → Open → pilih masker Anda
-3. Layer → Transparency → Add Alpha Channel
-4. Select by Color → pilih background → Delete
-5. File → Export As → PNG → Save
+3) Pilih masker di UI (tombol dinamis), atau klik “None” untuk tanpa masker. Atur Scale / OffsetX / OffsetY via slider.
+
+Catatan:
+- Server otomatis memuat semua PNG di `svm_orb_mask/assets/`
+- UI akan minta daftar masker ke server (`list_masks`) dan update tombol secara dinamis
+- Tidak ada kotak hijau di wajah (rectangle dihapus)
 
 ---
 
-## 🔧 Setup Masker
+## 🧱 Prasyarat
 
-### Struktur Folder:
-```
-svm_orb_tshirt/
-├── assets/
-│   ├── haarcascade_frontalface_default.xml
-│   └── haggus-skimask600x600.png  ← Path default (harus RGBA)
-├── tools/
-│   └── convert_mask_to_png_rgba.py  ← Script helper
-└── ...
-```
+- Python 3.8+
+- Dependencies: install dari `svm_orb_mask/requirements.txt`
+- Godot 4.x
+- Webcam tersedia
 
-### Test Masker:
-```bash
-# Cek apakah file masker valid (4-channel RGBA)
-python tools/convert_mask_to_png_rgba.py \
-    --input assets/mask_Anda.png \
-    --verify
-```
-
-**Output jika valid:**
-```
-📊 Informasi File PNG:
-   Ukuran: (600, 600, 4)
-   Channels: 4
-   ✅ VALID: 4-channel BGRA (siap untuk try-on overlay)
-```
+Opsional (untuk memperbaiki masker):
+- `tools/convert_mask_to_png_rgba.py` dan `tools/test_mask_validation.py`
 
 ---
 
-## 🎯 Test Try-On Mask
+## 🛠️ Menambahkan Masker Baru
 
-### Test 1: Webcam (Real-time)
-```bash
-# Default masker
-python app.py webcam --show
-
-# Custom masker
-python app.py webcam --mask assets/masker_baru.png --show
+Letakkan file PNG RGBA ke folder:
+```
+svm_orb_mask/assets/
 ```
 
-**Tekan 'q' untuk exit**
+Syarat masker:
+- PNG 4-channel (RGBA) — background transparan
+- Disarankan ukuran ≥ 400×400
 
-### Test 2: Single Image
-```bash
-python app.py infer --image test_image.jpg --show
+Server akan mendeteksi otomatis saat start dan mengirim daftar ke Godot.
+
+---
+
+## 🔍 Validasi Masker (Opsional tapi disarankan)
+
+Konversi/cek dengan helper script:
+```powershell
+python tools/convert_mask_to_png_rgba.py `
+  --input path\to\old.jpg `
+  --output assets\mask_baru.png `
+  --verify
 ```
 
-**Output:** Disimpan ke `out.jpg` (atau custom dengan `--out path/ke/output.jpg`)
-
-### Test 3: Video
-```bash
-python app.py video --video test_video.mp4 --show
+Atau hanya verifikasi:
+```powershell
+python tools/test_mask_validation.py
 ```
 
-**Output:** Disimpan ke `output_video.mp4`
+Lihat `README_MASK_SETUP.md` untuk detail.
 
 ---
 
-## 📋 Checklist Troubleshooting
+## ❓ FAQ Ringkas
 
-| ✅ Check | Cara Cek |
-|---------|---------|
-| Masker file ada? | `ls assets/*.png` |
-| Masker adalah PNG? | Cek extension `.png` (bukan `.jpg`) |
-| Masker 4-channel RGBA? | Jalankan script verify (lihat di atas) |
-| Model sudah trained? | Cek folder `models/` ada `codebook.pkl`, `scaler.pkl`, `svm.pkl` |
-| Dataset ada? | Cek `data/faces/` dan `data/non_faces/` ada files |
+Q: Tombol masker tidak muncul semua?
+- A: Pastikan server sudah jalan; UI meminta `list_masks` dari server saat terkoneksi.
 
----
+Q: Tidak ada overlay?
+- A: Pilih masker selain “None”. Pastikan masker PNG RGBA (lihat README_MASK_SETUP.md).
 
-## 🚀 Workflow Lengkap
+Q: Posisi/ukuran masker kurang pas?
+- A: Atur slider Scale / OffsetX / OffsetY di UI. Perubahan dikirim ke server real-time.
 
-```bash
-# Step 1: Siapkan masker (jika masker asli JPG)
-python tools/convert_mask_to_png_rgba.py \
-    --input masker_original.jpg \
-    --output assets/masker_saya.png \
-    --verify
-
-# Step 2: Train model (jika belum)
-python app.py train
-
-# Step 3: Test dengan webcam
-python app.py webcam --mask assets/masker_saya.png --show
-
-# Step 4: Test dengan gambar
-python app.py infer --image test_image.jpg --mask assets/masker_saya.png --show
-
-# Step 5: Test dengan video
-python app.py video --video test_video.mp4 --mask assets/masker_saya.png --show
-```
+Q: Ada kotak hijau di wajah?
+- A: Sudah dihapus di server terbaru. Restart server.py yang sekarang.
 
 ---
 
-## 📊 Debug Info
+## 🧪 Troubleshooting Checklist
 
-Untuk lihat detail info saat running:
-```bash
-# Dengan debug verbosity
-python app.py webcam --show 2>&1 | tee webcam_debug.log
-
-# Parse log untuk errors
-grep -i "error\|warn" webcam_debug.log
-```
+- [ ] Server jalan (terminal menampilkan “Server UDP mendengarkan…”)
+- [ ] Godot scene `MaskTryon.tscn` running
+- [ ] Webcam aktif (status “📹 Live” di UI)
+- [ ] Masker PNG RGBA di `assets/`
+- [ ] Pilih masker ≠ “None”
 
 ---
 
-## ❓ FAQ
-
-**Q: Overlay masker tidak muncul**
-- A: Cek apakah masker 4-channel RGBA dengan script verify
-- A: Cek apakah wajah terdeteksi (harus ada bounding box hijau)
-- A: Cek score_thresh tidak terlalu tinggi: `--score_thresh 0.0`
-
-**Q: Masker posisi salah**
-- A: Overlay ditaruh berdasarkan face bounding box, ukuran masker harus sesuai (600x600 optimal)
-
-**Q: "BUKAN PNG 4-channel" terus muncul**
-- A: Gunakan script convert: `python tools/convert_mask_to_png_rgba.py --input OLD --output NEW --verify`
-
-**Q: Model tidak ada**
-- A: Train dulu: `python app.py train`
-
----
-
-## 💡 Tips
-
-1. **Masker ukuran kecil** (< 300x300): Kurang optimal, resize dengan tool online
-2. **Masker background kompleks**: Gunakan remove.bg untuk hasil terbaik
-3. **Test realtime**: Webcam mode paling cepat untuk iterasi
-4. **Batch processing**: Gunakan video mode untuk proses banyak frame sekaligus
-
----
-
-**Last Updated**: November 2, 2025 | **Status**: ✅ Production Ready
+**Last Updated**: November 4, 2025 | **Status**: ✅ Up-to-date dengan Godot + server

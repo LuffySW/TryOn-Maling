@@ -1,110 +1,98 @@
-# SVM+ORB Torso Detector with T-shirt Overlay (BoVW, no deep learning)
+# Godot Try‑On Mask Overlay (Godot + Python UDP Server)
 
-A classical CV pipeline for upper-body detection and virtual try-on:
-- ROI proposals: Haar upper-body cascade (fallback HOG person detector).
-- Features: ORB descriptors on resized ROI (128×256 by default).
-- Encoding: Bag of Visual Words via MiniBatchKMeans.
-- Classifier: LinearSVC (default) or RBF SVM.
-- Inference: ROI proposals → ORB → BoVW → SVM → NMS → T-shirt PNG overlay.
+End‑to‑end try‑on system:
+- Python server (`svm_orb_mask/server.py`) menangkap webcam, deteksi wajah (Haar + ORB BoVW + SVM), overlay masker PNG RGBA, dan stream hasil ke Godot via UDP.
+- Godot client (`GodotTry-on`) menampilkan stream, tombol pilihan masker (dinamis), dan slider pengaturan overlay (scale/offset) yang dikirim real‑time ke server.
 
-## Quickstart
+Masker harus PNG 4‑channel (RGBA) dengan background transparan. Lihat `svm_orb_mask/README_MASK_SETUP.md` untuk cara konversi/validasi.
 
-- Python 3.10+
-- Install dependencies:
+## Setup Guide (Windows)
+1.  **Prasyarat**:
+  -   Install [Python](https://www.python.org/downloads/) (versi 3.8+ direkomendasikan). Pastikan `pip` terinstall dan ada di PATH.
+  -   Install [Godot Engine](https://godotengine.org/download/) (versi 4.x).
 
+2.  **Setup Server Python**:
+  -   Buka terminal (misalnya, PowerShell).
+  -   Navigasi ke direktori `svm_orb_mask`:
+    ```powershell
+    cd path\to\your\project\svm_orb_mask
+    ```
+  -   (Opsional tapi direkomendasikan) Buat dan aktifkan virtual environment:
+    ```powershell
+    python -m venv venv
+    .\venv\Scripts\Activate.ps1
+    ```
+  -   Install semua dependensi yang dibutuhkan:
+    ```powershell
+    pip install -r requirements.txt
+    ```
+
+3.  **Setup Client Godot**:
+  -   Buka Godot Engine.
+  -   Di Project Manager, klik tombol **Import**.
+  -   Navigasi ke folder `GodotTry-on` di dalam proyek Anda, pilih file `project.godot`, lalu klik **Open**.
+  -   Proyek akan ditambahkan ke daftar dan siap dibuka.
+
+4.  **Verifikasi File**:
+  -   Pastikan folder `svm_orb_mask/models/` berisi file `.pkl` yang diperlukan.
+  -   Pastikan folder `svm_orb_mask/assets/` berisi setidaknya satu file masker `.png` dengan format RGBA.
+
+## Quickstart (Windows PowerShell)
+
+1) Jalankan server Python:
 ```powershell
-pip install -r svm_orb_tshirt/requirements.txt
+cd svm_orb_mask
+py .\server.py
 ```
 
-- Prepare data (example folders; you can use your own):
-  - Positives in `data/torso/`
-  - Negatives in `data/non_torso/`
+2) Jalankan Godot project:
+- Buka `GodotTry-on/project.godot`
+- Run scene `MaskTryon.tscn`
 
-- Train (fit codebook + SVM and save artifacts to `svm_orb_tshirt/models/`):
+3) Di UI:
+- Pilih masker dari tombol (server mengirim daftar otomatis)
+- Atur Scale / OffsetX / OffsetY via slider
+- Gunakan tombol “None” untuk menonaktifkan overlay
 
-```powershell
-python svm_orb_tshirt/app.py train --pos_dir data/torso --neg_dir data/non_torso --k 256 --max_desc 200000 --svm linear --C 1.0
+Catatan:
+- Kotak hijau pada wajah telah dihapus di versi ini (feed bersih)
+- Server memuat semua PNG di `svm_orb_mask/assets/` secara otomatis
+
+## Struktur Proyek
+
+```
+GodotTry-on/
+  MaskTryon.tscn
+  MaskTryonController.gd
+  WebcamManager.gd
+svm_orb_mask/
+  server.py
+  assets/              # Mask PNG RGBA
+  models/              # codebook.pkl, scaler.pkl, svm.pkl
+  requirements.txt
 ```
 
-- Evaluate on held-out test split:
+## Protokol (Godot ↔ Server)
 
-```powershell
-python svm_orb_tshirt/app.py eval --report svm_orb_tshirt/models/test_metrics.json --pr svm_orb_tshirt/models/pr_curve.png
-```
+- Godot → Server:
+  - `ping` — heartbeat/registrasi
+  - `clothing:<mask_key>` — pilih masker atau `none`
+  - `settings:scale=<f>;offset_x=<f>;offset_y=<f>` — pengaturan overlay
+  - `list_masks` — minta daftar masker
+- Server → Godot:
+  - Frame JPEG terpaket (UDP, header 12 byte `!III`)
+  - JSON balasan untuk `list_masks`: `{ "masks": ["alias", ...] }`
 
-- Inference on a single image (with overlay):
+## Tips Masker
 
-```powershell
-python svm_orb_tshirt/app.py infer --image input.jpg --out out.jpg --tshirt svm_orb_tshirt/assets/tshirt.png --show
-```
+- Gunakan PNG RGBA, ukuran ≥ 400×400
+- Nama file bebas; server melakukan normalisasi alias (contoh: `ski-mask-removebg-preview.png` → `ski-mask`)
+- Tools bantu: `svm_orb_mask/tools/convert_mask_to_png_rgba.py`, `svm_orb_mask/tools/test_mask_validation.py`
 
-- Webcam demo (toggle overlay with `t`, quit with `q`):
-
-```powershell
-python svm_orb_tshirt/app.py webcam --camera 0 --tshirt svm_orb_tshirt/assets/tshirt.png --show
-```
-
-## Project Structure
-
-- CLI: `svm_orb_tshirt/app.py`
-- Dataset/ROI: `svm_orb_tshirt/pipelines/dataset.py`
-- Features/BoVW: `svm_orb_tshirt/pipelines/features.py`
-- Training/Eval: `svm_orb_tshirt/pipelines/train.py`
-- Inference/NMS: `svm_orb_tshirt/pipelines/infer.py`
-- Overlay: `svm_orb_tshirt/pipelines/overlay.py`
-- Utils: `svm_orb_tshirt/pipelines/utils.py`
-- Models: `svm_orb_tshirt/models/` (codebook.pkl, scaler.pkl, svm.pkl, splits.json)
-- Assets: put `svm_orb_tshirt/assets/tshirt.png` (transparent PNG with alpha)
-
-## Dataset preparation
-
-- If images are full scenes, the pipeline auto-proposes upper-body ROIs; positives/negatives come from proposals.
-- Ensure at least ~100 positive and ~100 negative images for a decent toy model.
-- Splits use 70/15/15 stratification and are saved to `svm_orb_tshirt/models/splits.json`.
-
-## BoVW + SVM in simple terms
-
-- ORB finds keypoints and descriptors per ROI (local patterns).
-- K-means groups descriptor space into K “visual words” (codebook).
-- Each ROI is represented by a histogram of visual words (BoVW), L1-normalized.
-- Standardize features and train a linear or RBF SVM to classify torso vs non-torso.
-
-## Overlay alignment
-
-- T-shirt width ≈ 1.1 × torso width (configurable), placed near the top of the torso box.
-- Optional rotation uses a gradient-based heuristic; disabled by default for speed.
-- Alpha blending respects PNG transparency and clamps to frame bounds.
-
-## CLI flags (common)
-
-- `--k`: codebook size (e.g., 128–512). Larger may improve accuracy but costs time.
-- `--max_desc`: cap on descriptors used to fit k-means.
-- `--svm`: `linear` (fast) or `rbf` (more flexible). Default: `linear`.
-- `--C`: regularization strength; try 0.5× and 2× for quick tuning.
-- `--score_thresh`: minimum decision score to accept a torso before NMS.
-- `--nms_iou`: IoU threshold for NMS (default 0.3).
-
-## Acceptance tests (manual checklist)
-
-1) Training completes on a toy dataset (≥100 pos/neg) in under ~2 minutes with k=256.
-2) `app.py infer` produces an output image with at least one torso box and overlay on a suitable input.
-3) Webcam mode reaches ~15 FPS on 720p on a mid-range laptop; `t` toggles overlay.
-4) Test AP ≥ 0.85 with a reasonable dataset and tuned `k`/`C` (report saved to JSON).
-5) Codebase is compact and passes a quick static check (syntax/type only) in editors/linters.
-
-## Known limitations & ideas
-
-- Haar/HOG can miss non-frontal or occluded torsos; try different parameters or add negatives.
-- BoVW quality depends on codebook; try BRISK/AKAZE, different `k`, or TF-IDF weighting.
-- Rotation is heuristic; classical pose/landmarks would improve alignment.
-- Color/lighting mismatch between PNG and scene not corrected (future: color transfer).
-
-## Linear vs RBF SVM
-
-- LinearSVC is faster and usually sufficient with standardized BoVW features.
-- RBF can model more complex boundaries; try `--svm rbf` with a small gamma grid (e.g., `scale`, 1e-3, 1e-4).
-- Compare AP/ROC-AUC in `val_metrics.json` and `test_metrics.json`.
+## Dataset yang digunakan
+- [Intel Image Classification (Kaggle)](https://www.kaggle.com/datasets/puneet6060/intel-image-classification) — dataset negatif (non-wajah)
+- [LFW – People (Kaggle)](https://www.kaggle.com/datasets/atulanandjha/lfwpeople) — dataset positif (wajah)
 
 ## License
 
-MIT. See `svm_orb_tshirt/LICENSE`.
+MIT.

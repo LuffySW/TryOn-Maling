@@ -1,6 +1,6 @@
 [gd_scene load_steps=6 format=3 uid="uid://dtpfjhqpeuof8"]
 
-[ext_resource type="Script" path="res://main_menu.gd" id="1_1oemn"]
+[ext_resource type="Script" uid="uid://p6gxb36h1hst" path="res://main_menu.gd" id="1_1oemn"]
 [ext_resource type="Texture2D" uid="uid://cmyi4gd4kvo5d" path="res://halloween-party.jpg" id="1_jfcbi"]
 [ext_resource type="FontFile" uid="uid://d0vlndlol111c" path="res://GrapeSoda.ttf" id="2_co47x"]
 

@@ -1,82 +1,48 @@
-# ✅ IMPLEMENTASI SELESAI - Validasi Masker Try-On Overlay
+# ✅ STATUS — Godot + Python UDP Mask Try-On
 
-## 🎯 Summary Singkat
+## 🎯 Summary
 
-Telah ditambahkan **validasi otomatis channel RGBA** pada semua fungsi inference try-on mask overlay. Ini memastikan file masker PNG memiliki transparansi yang benar sebelum digunakan.
+Integrasi end-to-end Godot (client) ↔ Python (server) selesai. Fitur utama:
+- Streaming webcam via UDP, overlay masker per-klien
+- Daftar masker dinamis dari server (`list_masks`)
+- Pengaturan overlay (Scale, OffsetX, OffsetY) real-time
+- Label tombol tanpa masker: “None”
+- Kotak hijau pada wajah dihapus dari stream
 
 ---
 
-## 📊 Perubahan File
+## 📊 Komponen Utama
 
 ```
-svm_orb_tshirt/
-│
-├── 📝 Dokumentasi Baru:
-│   ├── README_MASK_SETUP.md          ← Panduan Lengkap (START HERE!)
-│   ├── MASK_QUICK_START.md           ← Quick Reference
-│   ├── MASK_REQUIREMENTS.md          ← Detail Format Masker
-│   └── IMPLEMENTATION_SUMMARY.md     ← Technical Details
-│
-├── 🛠️ Tools Baru:
-│   ├── tools/convert_mask_to_png_rgba.py   ← Konversi masker JPG→PNG RGBA
-│   └── tools/test_mask_validation.py       ← Test validasi masker
-│
-└── ⚙️ Code Modifications:
-    └── pipelines/
-        ├── infer.py      ← ✅ Validasi ditambah (3 fungsi)
-        └── utils.py      ← ✅ Validasi ditambah (1 fungsi)
+GodotTry-on/
+   MaskTryon.tscn                    ← UI & scene
+   MaskTryonController.gd            ← Dynamic buttons + sliders + events
+   WebcamManager.gd                  ← UDP client + frame reassembly + list_masks
+svm_orb_mask/
+   server.py                         ← UDP server + overlay + mask discovery
+   assets/                           ← PNG RGBA masks (otomatis dimuat)
+   models/                           ← codebook.pkl, scaler.pkl, svm.pkl
 ```
 
 ---
 
-## 🔍 Validasi yang Ditambahkan
+## 🔧 Perilaku Penting
 
-### Lokasi Perubahan:
-
-1. **`pipelines/infer.py`**
-   - ✅ `infer_webcam()` - Line 130-145
-   - ✅ `infer_image()` - Line 197-210
-   - ✅ `infer_video()` - Line 250-263
-
-2. **`pipelines/utils.py`**
-   - ✅ `infer_webcam()` - Line 150-165
-
-### Validasi Code:
-```python
-# --- VALIDASI CHANNEL RGBA ---
-if len(mask_asset.shape) < 3 or mask_asset.shape[2] != 4:
-    logger.error(f"Error: File masker '{args.mask}' BUKAN PNG 4-channel (BGRA).")
-    logger.error("Masker Anda mungkin tidak punya latar belakang transparan.")
-    logger.error("Silakan cari file PNG lain yang benar-benar transparan.")
-    return
-# -------------------------------
-```
+- Server membalas `list_masks` dengan JSON: `{ "masks": ["alias", ...] }`
+- Client mem-build tombol masker dari daftar ini; fallback scan folder lokal jika belum terkoneksi
+- `settings:` dikirim saat slider berubah dan saat koneksi/first frame
+- Normalisasi nama masker di server agar toleran terhadap variasi nama file
+- Rectangle hijau untuk wajah dihapus (feed bersih)
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (E2E)
 
-### Jika Masker Error:
-```bash
-# 1. Konversi masker
-python tools/convert_mask_to_png_rgba.py \
-    --input mask_lama.jpg \
-    --output assets/mask_baru.png \
-    --verify
-
-# 2. Test dengan webcam
-python app.py webcam --mask assets/mask_baru.png --show
+```powershell
+cd svm_orb_mask
+py .\server.py
 ```
-
-### Jika Ingin Test Dulu:
-```bash
-# Verifikasi masker existing
-python tools/test_mask_validation.py
-
-# Expected output jika VALID:
-# ✅ PASSED: 4-channel RGBA
-#    Shape: (600, 600, 4)
-```
+Lalu jalankan Godot → `MaskTryon.tscn`, pilih masker, atur slider.
 
 ---
 
@@ -91,48 +57,22 @@ python tools/test_mask_validation.py
 
 ---
 
-## ✅ Fitur yang Ditambahkan
+## ✅ Fitur Selesai
 
-### 1. Validasi Otomatis ✨
-- ✅ Cek channel PNG = 4 (BGRA)
-- ✅ Error handling graceful (tidak crash)
-- ✅ Pesan error user-friendly & actionable
-
-### 2. Helper Tools 🛠️
-- ✅ Script konversi JPG → PNG RGBA
-- ✅ Script verifikasi masker
-- ✅ Support custom background color
-
-### 3. Dokumentasi Lengkap 📚
-- ✅ Panduan setup masker (3 metode)
-- ✅ Troubleshooting guide
-- ✅ FAQ & tips
-- ✅ Online resources links
-
-### 4. Test Cases 🧪
-- ✅ Test dengan webcam
-- ✅ Test dengan single image
-- ✅ Test dengan video
-- ✅ Automation test script
+- [x] Daftar masker dinamis via `list_masks`
+- [x] Pengaturan slider (scale/offset) per-klien
+- [x] Tombol “None” (tanpa “T‑Shirt”)
+- [x] Hilangkan kotak hijau pada feed
+- [x] Normalisasi nama masker di server
 
 ---
 
-## 🎯 Workflow Typical User
+## 🎯 Alur Pengguna
 
 ```
-1. Install & setup project
-   ↓
-2. Download/buat masker (JPG/PNG biasa)
-   ↓
-3. Jalankan: python app.py webcam --show
-   ↓
-❌ Error: "BUKAN PNG 4-channel"?
-   ↓
-4. Jalankan: python tools/convert_mask_to_png_rgba.py --input OLD --output NEW --verify
-   ↓
-5. Jalankan: python app.py webcam --mask assets/NEW --show
-   ↓
-✅ Masker muncul!
+1) Jalankan server.py → Godot scene → UI tampil
+2) Pilih masker (atau None)
+3) Atur Scale/Offset → perubahan terlihat langsung
 ```
 
 ---
@@ -171,16 +111,11 @@ python app.py webcam --mask assets/masker_saya.png --show
 
 ---
 
-## 📊 Quality Metrics
+## 📊 Catatan Kualitas
 
-| Metrik | Before | After |
-|--------|--------|-------|
-| **Masker detection** | ❌ None | ✅ Otomatis |
-| **Error clarity** | ⚠️ Generic | ✅ Specific & actionable |
-| **User guidance** | ❌ None | ✅ 4 docs + 2 scripts |
-| **Success rate** | ~60% | ~95% |
-| **Debug time** | 30+ min | ~2 min |
-| **Automation** | ❌ Manual | ✅ Fully automated |
+- Build: PASS (Python server run; Godot scripts parsable)
+- Lint/Typecheck: N/A untuk Godot; Python basic run OK
+- Tests: Manual end-to-end
 
 ---
 
@@ -284,9 +219,9 @@ python app.py webcam --mask assets/masker_saya.png --show
 
 ---
 
-**Status:** ✅ **PRODUCTION READY**  
-**Date:** November 2, 2025  
-**Version:** 1.0  
+**Status:** ✅ PRODUCTION READY  
+**Date:** November 4, 2025  
+**Version:** 1.1  
 **Maintainer:** Development Team
 
 ---

@@ -1,5 +1,27 @@
 # 📝 CHANGELOG - Try-On Mask Overlay System
 
+## Version 1.1 - November 4, 2025
+
+### 🔄 Godot + Python UDP Integration
+
+- Added UDP server (`svm_orb_mask/server.py`) streaming JPEG frames with overlay
+- Implemented dynamic mask discovery from `assets/` and alias normalization
+- Added per-client overlay settings: `scale`, `offset_x`, `offset_y`
+- Added `list_masks` command; server replies JSON `{ "masks": [...] }`
+- Removed green rectangle drawing around faces from the stream
+
+### 🎮 Godot Client Updates
+
+- `MaskTryonController.gd`: builds dynamic mask buttons from server list with fallback local scan
+- `WebcamManager.gd`: packet reassembly, `request_masks_list()`, JSON control parsing
+- UI sliders for Scale/Offset send settings to server in real time
+- “None” label for no-mask option (replacing “T‑Shirt (None)”) 
+
+### 📚 Documentation
+
+- Overhauled docs to reflect client–server architecture
+- Updated `MASK_QUICK_START.md`, `IMPLEMENTATION_SUMMARY.md`, `STATUS.md`, `DOCUMENTATION_INDEX.md`
+
 ## Version 1.0 - November 2, 2025
 
 ### 🎉 Major Features Added

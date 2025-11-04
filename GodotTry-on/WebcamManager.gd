@@ -3,6 +3,7 @@ extends Node
 signal frame_received(texture: ImageTexture)
 signal connection_changed(connected: bool) 
 signal error_message(message: String)
+signal masks_list_received(masks: Array)
 
 var udp_socket: PacketPeerUDP
 var webcam_connected: bool = false
@@ -56,19 +57,18 @@ func _process(delta):
 	# Terima paket UDP
 	while udp_socket.get_available_packet_count() > 0:
 		var packet = udp_socket.get_packet()
-		if packet.size() >= 12:  # Header minimal 12 bytes (3x unsigned int, 4 bytes each)
+		if packet.size() > 0:
+			if _maybe_control_message(packet):
+				continue
 			_process_udp_packet(packet)
-		elif packet.size() > 0:
-			print("⚠️ Packet terlalu kecil: %d bytes" % packet.size())
 
 func _send_ping():
 	"""Kirim ping ke server untuk register sebagai client."""
 	if udp_socket:
 		var ping_data = "ping".to_utf8_buffer()
 		udp_socket.set_dest_address(server_host, server_port)
-		var err = udp_socket.put_packet(ping_data)
-		if err != OK:
-			print("⚠️ Failed to send ping: %s" % error_string(err))
+		if udp_socket.put_packet(ping_data) != OK:
+			print("⚠️ Failed to send ping")
 
 func send_clothing_selection(clothing_name: String):
 	"""Kirim pilihan pakaian ke server untuk di-apply pada overlay."""
@@ -78,19 +78,42 @@ func send_clothing_selection(clothing_name: String):
 	
 	var msg = ("clothing:" + clothing_name).to_utf8_buffer()
 	udp_socket.set_dest_address(server_host, server_port)
-	var err = udp_socket.put_packet(msg)
-	if err != OK:
-		print("⚠️ Failed to send clothing selection: %s" % error_string(err))
+	if udp_socket.put_packet(msg) != OK:
+		print("⚠️ Failed to send clothing selection")
 	else:
 		print("👕 Sent clothing selection to server: %s" % clothing_name)
 
-func _process_udp_packet(packet: PackedByteArray):
+func request_masks_list():
+	"""Minta daftar masker dari server; server akan balas JSON {"masks": [..]}"""
+	if not udp_socket:
+		print("❌ UDP socket not ready (request_masks_list)")
+		return
+	var data: PackedByteArray = "list_masks".to_utf8_buffer()
+	udp_socket.set_dest_address(server_host, server_port)
+	if udp_socket.put_packet(data) != OK:
+		print("⚠️ Failed to send list_masks request")
+
+func send_settings(scale: float, offset_x: float, offset_y: float) -> void:
+	"""Kirim pengaturan overlay masker ke server."""
+	if not udp_socket:
+		print("❌ UDP socket not ready (settings)")
+		return
+	var msg_str := "settings:scale=%.3f;offset_x=%.3f;offset_y=%.3f" % [scale, offset_x, offset_y]
+	var data: PackedByteArray = msg_str.to_utf8_buffer()
+	udp_socket.set_dest_address(server_host, server_port)
+	if udp_socket.put_packet(data) != OK:
+		print("⚠️ Failed to send settings")
+	else:
+		# Throttle log volume by not printing every frame; this is a one-liner info
+		pass
+
+func _process_udp_packet(packet: PackedByteArray):	
 	"""
 	Parse UDP packet dengan format (BIG-ENDIAN dari Python):
 	[4 bytes: sequence_number][4 bytes: total_packets][4 bytes: packet_index][remaining: frame_data]
 	"""
 	if packet.size() < 12:
-		print("❌ Packet header tidak lengkap: %d bytes" % packet.size())
+		# Bukan paket frame; sudah dicoba sebagai kontrol di _maybe_control_message
 		return
 	
 	# Decode big-endian integers (dari Python struct.pack("!III", ...))
@@ -98,6 +121,14 @@ func _process_udp_packet(packet: PackedByteArray):
 	var sequence_number = (packet[0] << 24) | (packet[1] << 16) | (packet[2] << 8) | packet[3]
 	var total_packets = (packet[4] << 24) | (packet[5] << 16) | (packet[6] << 8) | packet[7]
 	var packet_index = (packet[8] << 24) | (packet[9] << 16) | (packet[10] << 8) | packet[11]
+
+	# Validasi header agar tidak salah mengira pesan kontrol sebagai frame
+	if total_packets <= 0 or total_packets > 10000 or packet_index < 0 or packet_index >= total_packets:
+		# Kemungkinan ini pesan kontrol teks; coba parse
+		if _maybe_control_message(packet):
+			return
+		# Jika bukan kontrol, buang
+		return
 	
 	# Extract frame data (semua bytes setelah header)
 	var frame_data = packet.slice(12)
@@ -142,6 +173,39 @@ func _process_udp_packet(packet: PackedByteArray):
 			var oldest_seq = sequence_number - 5
 			if oldest_seq >= 0 and oldest_seq in frame_buffer:
 				frame_buffer.erase(oldest_seq)
+
+func _maybe_control_message(packet: PackedByteArray) -> bool:
+	"""Coba decode paket sebagai pesan kontrol JSON dari server. Return true jika sudah ditangani."""
+	# Optimisasi: jika byte pertama adalah '{' maka kemungkinan besar JSON
+	if packet.size() == 0:
+		return false
+	var first := packet[0]
+	if first != int('{'.to_utf8_buffer()[0]):
+		# Bisa jadi teks lain; tetap coba decode kecil (< 512 bytes)
+		if packet.size() > 512:
+			return false
+	var text := ""
+	var ok := true
+	# Coba decode utf-8
+	# In Godot 4, PackedByteArray has get_string_from_utf8 via String(...)? Use built-in conversion
+	# Use a try-like guard: if decoding fails, we consider it not control.
+	text = packet.get_string_from_utf8()
+	if text == "":
+		# Could be binary frame packet
+		return false
+	text = text.strip_edges()
+	if text.begins_with("{") and text.ends_with("}"):
+		# Parse simple JSON for masks list
+		var json := JSON.new()
+		var res := json.parse(text)
+		if res == OK:
+			var obj = json.data
+			if typeof(obj) == TYPE_DICTIONARY and obj.has("masks"):
+				var masks = obj["masks"]
+				if typeof(masks) == TYPE_ARRAY:
+					masks_list_received.emit(masks)
+					return true
+	return false
 
 func _process_frame(jpeg_data: PackedByteArray):
 	"""Decode JPEG data dan emit frame_received signal."""

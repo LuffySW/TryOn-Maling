@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://cl5s7sv7iqp5r"]
 
-[ext_resource type="Script" path="res://credit.gd" id="1_8y6yt"]
+[ext_resource type="Script" uid="uid://dmx6jnkuop4xq" path="res://credit.gd" id="1_8y6yt"]
 [ext_resource type="Texture2D" uid="uid://cmyi4gd4kvo5d" path="res://halloween-party.jpg" id="1_gdbn4"]
 [ext_resource type="FontFile" uid="uid://d0vlndlol111c" path="res://GrapeSoda.ttf" id="2_mrqlu"]
 [ext_resource type="FontFile" uid="uid://x02fl545qt24" path="res://PIPERLAND.ttf" id="3_cp4cc"]
